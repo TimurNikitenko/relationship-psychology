@@ -5,7 +5,9 @@ services:
     image: pgvector/pgvector:pg15
     container_name: relationships_psychology_db
     ports:
-      - "5436:5432"
+      # Exposes database only to localhost (127.0.0.1) for security.
+      # Allows SSH tunneling if needed, but prevents public access on VPS.
+      - "127.0.0.1:5436:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -14,5 +16,29 @@ services:
       - pgdata:/var/lib/postgresql/data
     restart: always
 
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: relationships_psychology_bot
+    restart: always
+    depends_on:
+      - db
+    env_file:
+      - .env
+    environment:
+      # Override DATABASE_URL to target the db container in the docker network
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/relationships_psychology
+      # Ensure re-ranker is disabled as per current requirement
+      - USE_RERANKER=False
+    volumes:
+      # Persistent cache for HuggingFace models
+      - hf_cache:/app/.cache/huggingface
+      # Mount the local dataset files for database initialization (optional but recommended)
+      - ./videos_data.json:/app/videos_data.json
+      - ./chunks_with_summaries.json:/app/chunks_with_summaries.json
+      - ./chunks_with_embeddings.json:/app/chunks_with_embeddings.json
+
 volumes:
   pgdata:
+  hf_cache:
