@@ -15,6 +15,10 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     restart: always
+    networks:
+      - default
+      - shared_agent_network
+
 
   bot:
     build:
@@ -42,3 +46,8 @@ services:
 volumes:
   pgdata:
   hf_cache:
+
+networks:
+  shared_agent_network:
+    external: true
+
